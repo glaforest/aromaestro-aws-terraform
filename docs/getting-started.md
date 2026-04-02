@@ -237,48 +237,67 @@ AWS_PROFILE=aromaestro-mgmt terraform apply
 
 ### Etape 4 : Deployer le Dev
 
+**Important :** Configurer la cle Tailscale **avant** de deployer les EC2 pour que le user_data fonctionne au premier boot.
+
 ```bash
 cd terraform/environments/dev
 cp terraform.tfvars.example terraform.tfvars
 nano terraform.tfvars
+
 AWS_PROFILE=aromaestro-dev terraform init
-AWS_PROFILE=aromaestro-dev terraform apply
-```
 
-Apres le deploiement :
+# 1. Deployer seulement le secret Tailscale d'abord
+AWS_PROFILE=aromaestro-dev terraform apply -target=aws_secretsmanager_secret.tailscale
 
-```bash
-# Configurer la cle Tailscale dans Secrets Manager
-# 1. Generer une auth key sur https://login.tailscale.com/admin/settings/keys
-#    (Reusable: oui, Expiration: 90 jours)
-# 2. La stocker dans Secrets Manager :
+# 2. Generer une auth key Tailscale
+#    Aller sur https://login.tailscale.com/admin/settings/keys
+#    Generer une cle : Reusable = oui, Expiration = 90 jours
+#    Copier la cle
+
+# 3. Stocker la cle dans Secrets Manager
 AWS_PROFILE=aromaestro-dev aws secretsmanager put-secret-value \
   --secret-id "aromaestro-development-tailscale-auth-key" \
-  --secret-string "tskey-auth-XXXXXXXXXXXX"
+  --secret-string "tskey-auth-TA-CLE-ICI"
 
-# Installer Tailscale + CloudWatch Agent sur toutes les instances via SSM
+# 4. Deployer le reste de l'infrastructure
+AWS_PROFILE=aromaestro-dev terraform apply
+
+# 5. Confirmer l'abonnement SNS (verifier sa boite email, cliquer le lien)
+```
+
+Le user_data des EC2 installe automatiquement :
+- AWS CLI v2
+- Tailscale (se connecte avec la cle dans Secrets Manager)
+- CloudWatch Agent (metriques memoire et disque)
+
+**Plan B - si le user_data n'a pas fonctionne :**
+
+Si les instances n'apparaissent pas dans Tailscale apres 5 minutes, relancer l'installation via SSM :
+
+```bash
 AWS_PROFILE=aromaestro-dev aws ssm send-command \
   --document-name "AWS-RunShellScript" \
   --targets "Key=tag:Owner,Values=aromaestro" \
   --parameters 'commands=[
+    "set -e",
     "apt-get update -y && apt-get install -y unzip curl",
-    "curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip -o /tmp/awscliv2.zip && unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install && rm -rf /tmp/aws /tmp/awscliv2.zip",
-    "curl -fsSL https://tailscale.com/install.sh | sh",
+    "if ! command -v aws > /dev/null 2>&1; then curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip -o /tmp/awscliv2.zip && unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install && rm -rf /tmp/aws /tmp/awscliv2.zip; fi",
+    "if ! command -v tailscale > /dev/null 2>&1; then curl -fsSL https://tailscale.com/install.sh | sh; fi",
     "TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H X-aws-ec2-metadata-token-ttl-seconds:60)",
     "REGION=$(curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/placement/region)",
     "INSTANCE_ID=$(curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/instance-id)",
     "TAILSCALE_AUTH_KEY=$(/usr/local/bin/aws secretsmanager get-secret-value --secret-id aromaestro-development-tailscale-auth-key --query SecretString --output text --region $REGION)",
     "HOSTNAME=$(/usr/local/bin/aws ec2 describe-tags --filters Name=resource-id,Values=$INSTANCE_ID Name=key,Values=Name --query Tags[0].Value --output text --region $REGION)",
     "tailscale up --authkey=\"$TAILSCALE_AUTH_KEY\" --hostname=\"$HOSTNAME\"",
-    "wget -q https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/arm64/latest/amazon-cloudwatch-agent.deb && dpkg -i amazon-cloudwatch-agent.deb && rm -f amazon-cloudwatch-agent.deb",
+    "if ! dpkg -l amazon-cloudwatch-agent > /dev/null 2>&1; then wget -q https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/arm64/latest/amazon-cloudwatch-agent.deb && dpkg -i amazon-cloudwatch-agent.deb && rm -f amazon-cloudwatch-agent.deb; fi",
     "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c ssm:/aromaestro/development/cloudwatch-agent-config"
   ]' \
   --timeout-seconds 600
-
-# Confirmer l'abonnement SNS (verifier sa boite email)
 ```
 
 ### Etape 5 : Deployer la Prod
+
+**Important :** Meme flow que le dev - configurer Tailscale avant de deployer les EC2.
 
 ```bash
 cd terraform/environments/prod
@@ -287,18 +306,51 @@ nano terraform.tfvars
 
 AWS_PROFILE=aromaestro-prod terraform init
 
-# Importer les buckets S3 existants
+# 1. Importer les buckets S3 existants (une seule fois)
 AWS_PROFILE=aromaestro-prod terraform import module.existing_backups.aws_s3_bucket.this aromaestro-backups
 AWS_PROFILE=aromaestro-prod terraform import module.existing_diffuser_ota.aws_s3_bucket.this aromaestro-diffuser-ota
 AWS_PROFILE=aromaestro-prod terraform import module.existing_ota.aws_s3_bucket.this aromaestro-ota
 
-# Verifier le plan (attention aux ressources existantes)
+# 2. Deployer le secret Tailscale d'abord
+AWS_PROFILE=aromaestro-prod terraform apply -target=aws_secretsmanager_secret.tailscale
+
+# 3. Generer et stocker la cle Tailscale (meme processus que dev)
+#    Aller sur https://login.tailscale.com/admin/settings/keys
+#    Generer une cle : Reusable = oui, Expiration = 90 jours
+AWS_PROFILE=aromaestro-prod aws secretsmanager put-secret-value \
+  --secret-id "aromaestro-production-tailscale-auth-key" \
+  --secret-string "tskey-auth-TA-CLE-ICI"
+
+# 4. Verifier le plan
 AWS_PROFILE=aromaestro-prod terraform plan
 
-# Deployer
+# 5. Deployer
 AWS_PROFILE=aromaestro-prod terraform apply
 
-# Configurer Tailscale (meme processus que dev, avec le bon secret-id)
+# 6. Confirmer l'abonnement SNS (verifier sa boite email)
+```
+
+**Plan B prod** - si le user_data n'a pas fonctionne, meme commande SSM que dev mais avec le profil prod :
+
+```bash
+AWS_PROFILE=aromaestro-prod aws ssm send-command \
+  --document-name "AWS-RunShellScript" \
+  --targets "Key=tag:Owner,Values=aromaestro" \
+  --parameters 'commands=[
+    "set -e",
+    "apt-get update -y && apt-get install -y unzip curl",
+    "if ! command -v aws > /dev/null 2>&1; then curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip -o /tmp/awscliv2.zip && unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install && rm -rf /tmp/aws /tmp/awscliv2.zip; fi",
+    "if ! command -v tailscale > /dev/null 2>&1; then curl -fsSL https://tailscale.com/install.sh | sh; fi",
+    "TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H X-aws-ec2-metadata-token-ttl-seconds:60)",
+    "REGION=$(curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/placement/region)",
+    "INSTANCE_ID=$(curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/instance-id)",
+    "TAILSCALE_AUTH_KEY=$(/usr/local/bin/aws secretsmanager get-secret-value --secret-id aromaestro-production-tailscale-auth-key --query SecretString --output text --region $REGION)",
+    "HOSTNAME=$(/usr/local/bin/aws ec2 describe-tags --filters Name=resource-id,Values=$INSTANCE_ID Name=key,Values=Name --query Tags[0].Value --output text --region $REGION)",
+    "tailscale up --authkey=\"$TAILSCALE_AUTH_KEY\" --hostname=\"$HOSTNAME\"",
+    "if ! dpkg -l amazon-cloudwatch-agent > /dev/null 2>&1; then wget -q https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/arm64/latest/amazon-cloudwatch-agent.deb && dpkg -i amazon-cloudwatch-agent.deb && rm -f amazon-cloudwatch-agent.deb; fi",
+    "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c ssm:/aromaestro/production/cloudwatch-agent-config"
+  ]' \
+  --timeout-seconds 600
 ```
 
 ## Operations courantes
