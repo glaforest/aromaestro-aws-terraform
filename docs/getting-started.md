@@ -399,6 +399,40 @@ AWS_PROFILE=aromaestro-dev aws secretsmanager put-secret-value \
   --secret-string "<VOTRE-NOUVELLE-CLE-TAILSCALE>"
 ```
 
+### Eteindre l'environnement dev (economiser ~$36/mois)
+
+```bash
+# Eteindre toutes les instances EC2 + NAT
+AWS_PROFILE=aromaestro-dev aws ec2 stop-instances --instance-ids \
+  i-0108c54a43009ecf7 \
+  i-0861dee9685a65efd \
+  i-009d2359092ba5259 \
+  i-0d383618e084bac65 \
+  i-01134294dcbeea171
+
+# Eteindre RDS (se rallume automatiquement apres 7 jours - limite AWS)
+AWS_PROFILE=aromaestro-dev aws rds stop-db-instance \
+  --db-instance-identifier aromaestro-development-mysql
+```
+
+### Rallumer l'environnement dev
+
+```bash
+# Rallumer la NAT instance EN PREMIER (les autres ont besoin d'internet)
+AWS_PROFILE=aromaestro-dev aws ec2 start-instances --instance-ids i-01134294dcbeea171
+
+# Attendre 30 secondes que la NAT soit prete, puis rallumer les EC2
+AWS_PROFILE=aromaestro-dev aws ec2 start-instances --instance-ids \
+  i-0108c54a43009ecf7 \
+  i-0861dee9685a65efd \
+  i-009d2359092ba5259 \
+  i-0d383618e084bac65
+
+# Rallumer RDS (~10 minutes pour demarrer)
+AWS_PROFILE=aromaestro-dev aws rds start-db-instance \
+  --db-instance-identifier aromaestro-development-mysql
+```
+
 ### Modifier l'infrastructure
 
 ```bash
