@@ -14,7 +14,7 @@
 
 | Bucket | Usage | Config |
 |---|---|---|
-| aromaestro-dev-assets | Fichiers statiques apps web | SSE-S3, versioning, TLS enforce |
+| aromaestro-dev-assets | Fichiers statiques apps web | SSE-KMS, versioning, TLS enforce |
 | aromaestro-dev-logs | CloudTrail, VPC Flow Logs, Config | AES256, lifecycle 90j, policy CloudTrail/Config |
 
 ### Terraform State (Management)

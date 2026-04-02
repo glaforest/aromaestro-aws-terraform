@@ -19,7 +19,7 @@ resource "aws_ssm_patch_baseline" "ubuntu" {
 
 resource "aws_ssm_maintenance_window" "patching" {
   name                       = "${local.name_prefix}-patching-window"
-  schedule                   = "cron(0 8 ? * 1 *)"
+  schedule                   = "cron(0 8 ? * SUN *)"
   duration                   = 3
   cutoff                     = 1
   allow_unassociated_targets = false

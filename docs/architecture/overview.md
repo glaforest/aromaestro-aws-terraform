@@ -8,18 +8,18 @@ Infrastructure AWS multi-compte pour Aromaestro utilisant une approche zero-trus
 
 | Compte | Role | ID |
 |---|---|---|
-| Management | Facturation, Organizations, IAM Identity Center, SCPs | *(a completer)* |
-| Prod | Workloads de production, IoT, SES | *(compte Aromaestro existant)* |
-| Dev | Miroir simplifie de Prod | *(a completer)* |
-| LogArchive | Centralisation des logs CloudTrail | *(a completer)* |
+| Management | Facturation, Organizations, IAM Identity Center, SCPs | 589389426408 |
+| Prod | Workloads de production, IoT, SES | 872515273944 |
+| Dev | Miroir simplifie de Prod | 051370880327 |
+| LogArchive | Centralisation des logs CloudTrail | 315466292610 |
 
 ## Principes architecturaux
 
-- **Zero-trust** : Tailscale comme overlay reseau, aucun port inbound sur les instances
-- **Subnets prives** : 1 seul subnet public par VPC (NAT uniquement)
+- **Zero-trust** : Tailscale comme overlay reseau, aucun port inbound sur les instances privees
+- **Subnets prives** : 1 seul subnet public par VPC (NAT + web-site avec EIP)
 - **Infrastructure as Code** : 100% Terraform, state distant S3 + DynamoDB
 - **Dev-first** : tout est valide en Dev avant deploiement en Prod
-- **Chiffrement partout** : EBS, S3 (SSE-S3 + TLS), RDS (KMS + TLS)
+- **Chiffrement partout** : EBS, S3 (SSE-KMS + TLS), RDS (KMS + TLS)
 
 ## Estimation des couts
 

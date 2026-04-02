@@ -37,6 +37,11 @@ cd terraform/environments/management
 AWS_PROFILE=aromaestro-mgmt terraform plan
 AWS_PROFILE=aromaestro-mgmt terraform apply
 
+# Prod environment (code ready, not yet deployed)
+cd terraform/environments/prod
+AWS_PROFILE=aromaestro-prod terraform plan
+AWS_PROFILE=aromaestro-prod terraform apply
+
 # State backend bootstrap (one-time, already done)
 cd terraform/backend
 AWS_PROFILE=aromaestro-mgmt terraform apply
@@ -62,11 +67,12 @@ terraform/
     organizations/         # Combined SCP guardrails
   environments/
     management/            # Organizations, SCPs, Budgets
-    dev/                   # Full dev environment (all modules wired up)
-    prod/                  # Prod environment (Phase 3 - not yet implemented)
-    logarchive/            # LogArchive account (Phase 3)
+    dev/                   # Full dev environment (all modules wired up, deployed)
+    prod/                  # Prod environment (code ready, not yet deployed)
+    logarchive/            # LogArchive account (placeholder, not yet implemented)
 docs/
   README.md                # Master index
+  getting-started.md       # New machine setup guide
   architecture/            # Overview, accounts, network
   infrastructure/          # Compute, database, storage
   security/                # Services, IAM, encryption
@@ -79,7 +85,7 @@ docs/
 
 - **Phase 1 (Foundation):** DONE - accounts, SSO, state backend, SCPs, budgets
 - **Phase 2 (Dev):** DONE - 108 resources deployed
-- **Phase 3 (Prod):** NOT STARTED - uses same modules, see plan Tasks 15-17
+- **Phase 3 (Prod):** CODE READY, NOT YET DEPLOYED - uses same modules, see getting-started.md for deploy steps
 
 ## Key Architecture Decisions
 
@@ -87,31 +93,32 @@ docs/
 - **web-site is public:** `web-site` instance is in the public subnet with an Elastic IP and inbound 80/443. Other instances (web-admin, web-wordpress, web-openclaw) are in private subnets with zero inbound ports.
 - **NAT instance in dev:** Amazon Linux 2023 (t4g.nano) with IP forwarding + iptables MASQUERADE. Interface auto-detected. Saves ~$40/mo vs NAT Gateway.
 - **NAT Gateway in prod:** More reliable for production.
-- **Tailscale zero-trust:** All instance access via Tailscale mesh VPN. Auth key in Secrets Manager. Installed via SSM Run Command (not user_data, because AWS CLI must be installed first).
-- **S3 logs bucket uses AES256:** Not KMS, for CloudTrail/Config write compatibility.
+- **Tailscale zero-trust:** All instance access via Tailscale mesh VPN. Auth key in Secrets Manager. Installed automatically at first boot via user_data (installs AWS CLI v2, Tailscale, CloudWatch Agent). Fallback: SSM Run Command if user_data fails.
+- **S3 logs bucket uses AES256:** Not KMS, for CloudTrail/Config write compatibility. Assets buckets use SSE-KMS (default).
 - **SCPs combined:** Single policy `aromaestro-guardrails` (AWS limit of 5 SCPs per target).
 - **CloudWatch Agent required:** Memory and disk metrics need the CWAgent installed on each EC2.
-- **user_data installs AWS CLI v2:** Ubuntu 24.04 ARM does not include awscli. Script downloads from awscli.amazonaws.com zip.
+- **CloudTrail multi-region:** Required by SecurityHub Foundational Best Practices standard.
 
 ## Pending Items
 
-- Cost Anomaly Detection: uncomment in `modules/budgets/main.tf` after Cost Explorer is active
+- Cost Anomaly Detection: uncomment in `modules/budgets/main.tf` after Cost Explorer is active (24h after activation on 2026-04-02)
 - Tailscale auth key rotation: automate with Lambda + EventBridge
-- LogArchive CloudTrail centralization: Phase 3
-- Prod environment deployment: Phase 3 (Tasks 15-17 in plan)
+- LogArchive CloudTrail centralization: future work
+- Prod environment deployment: code ready, see getting-started.md etape 5
+- Logarchive provider: still uses assume_role pattern, needs to be updated to direct profile when deployed
 
 ## Dev Environment Resources
 
 | Resource | Details |
 |---|---|
 | VPC | 10.1.0.0/16 |
-| web-site | t4g.micro, public subnet, EIP |
-| web-admin | t4g.micro, private subnet |
-| web-wordpress | t4g.micro, private subnet |
-| web-openclaw | t4g.micro, private subnet |
-| RDS | MySQL 8.0, db.t4g.micro, TLS enforced |
-| S3 | aromaestro-dev-assets, aromaestro-dev-logs |
-| Security | GuardDuty, Inspector, SecurityHub, CloudTrail, Config (4 rules) |
-| Monitoring | 26 CloudWatch alarms, SNS email alerts, EventBridge for GuardDuty/Inspector |
-| Backup | Daily, 3-day retention |
-| Patching | Sunday 3AM EST, automatic |
+| web-site | t4g.micro, public subnet, EIP, inbound 80/443 |
+| web-admin | t4g.micro, private subnet, zero inbound |
+| web-wordpress | t4g.micro, private subnet, zero inbound |
+| web-openclaw | t4g.micro, private subnet, zero inbound |
+| RDS | MySQL 8.0, db.t4g.micro, TLS enforced, password in Secrets Manager |
+| S3 | aromaestro-dev-assets (SSE-KMS), aromaestro-dev-logs (AES256) |
+| Security | GuardDuty, Inspector, SecurityHub, CloudTrail (multi-region), Config (4 rules) |
+| Monitoring | 23 CloudWatch alarms, SNS email alerts, 2 EventBridge rules (GuardDuty/Inspector) |
+| Backup | Daily 7:00 UTC, 3-day retention |
+| Patching | Sunday 8:00 UTC (3AM EST), automatic |

@@ -11,15 +11,15 @@
 | web-wordpress | WordPress | t4g.micro | Ubuntu 24.04 ARM | private-app-a | Non |
 | web-openclaw | Open Claw | t4g.micro | Ubuntu 24.04 ARM | private-app-a | Non |
 
-### Prod (Phase 3)
+### Prod
 
-Meme structure en t4g.small.
+Meme structure en t4g.small. Code pret, pas encore deploye.
 
 ## Configuration commune
 
-- **Tailscale** : installe via SSM Run Command, auth key dans Secrets Manager
-- **CloudWatch Agent** : installe via SSM, config dans SSM Parameter Store
-- **AWS CLI v2** : installe pour l'acces a Secrets Manager
+- **Tailscale** : installe au premier boot via user_data, auth key dans Secrets Manager. Fallback : installation via SSM Run Command si le user_data echoue.
+- **CloudWatch Agent** : installe au premier boot via user_data, config dans SSM Parameter Store
+- **AWS CLI v2** : installe au premier boot via user_data (requis sur Ubuntu 24.04 ARM)
 - **SSM Agent** : pre-installe sur Ubuntu, IAM role attache
 - **EBS chiffre** : gp3 20GB, chiffrement par defaut au niveau du compte
 
@@ -61,4 +61,5 @@ Permissions :
 
 - Auth key dans Secrets Manager : `aromaestro-{env}-tailscale-auth-key`
 - Expiration : 90 jours (rotation manuelle pour l'instant)
-- Installation via SSM Run Command sur toutes les instances
+- Installation : automatique au premier boot via user_data
+- Fallback : SSM Run Command (voir getting-started.md)
