@@ -9,7 +9,16 @@ Documentation technique de l'infrastructure AWS Aromaestro.
 
 ---
 
+## Demarrage rapide
+
+**Nouvel ordinateur?** Voir le [Guide de demarrage](getting-started.md) pour tout installer et configurer.
+
+---
+
 ## Table des matieres
+
+### 0. Demarrage
+- [Guide de demarrage (nouvel ordinateur)](getting-started.md)
 
 ### 1. Architecture
 - [Vue d'ensemble](architecture/overview.md)
