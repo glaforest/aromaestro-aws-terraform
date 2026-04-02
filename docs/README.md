@@ -19,6 +19,7 @@ Documentation technique de l'infrastructure AWS Aromaestro.
 
 ### 0. Demarrage
 - [Guide de demarrage (nouvel ordinateur)](getting-started.md)
+- [Presentation KPMG](presentation-kpmg.md)
 
 ### 1. Architecture
 - [Vue d'ensemble](architecture/overview.md)
