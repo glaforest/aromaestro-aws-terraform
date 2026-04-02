@@ -15,3 +15,8 @@ variable "project" {
   type        = string
   default     = "aromaestro"
 }
+
+variable "alert_email" {
+  description = "Email for CloudWatch and budget alerts"
+  type        = string
+}

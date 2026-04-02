@@ -1,0 +1,4 @@
+aws_region  = "ca-central-1"
+environment = "production"
+project     = "aromaestro"
+alert_email = "your-email@aromaestro.com"
