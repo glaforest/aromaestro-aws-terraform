@@ -257,7 +257,7 @@ AWS_PROFILE=aromaestro-dev terraform apply -target=aws_secretsmanager_secret.tai
 # 3. Stocker la cle dans Secrets Manager
 AWS_PROFILE=aromaestro-dev aws secretsmanager put-secret-value \
   --secret-id "aromaestro-development-tailscale-auth-key" \
-  --secret-string "tskey-auth-TA-CLE-ICI"
+  --secret-string "<VOTRE-CLE-TAILSCALE>"
 
 # 4. Deployer le reste de l'infrastructure
 AWS_PROFILE=aromaestro-dev terraform apply
@@ -319,7 +319,7 @@ AWS_PROFILE=aromaestro-prod terraform apply -target=aws_secretsmanager_secret.ta
 #    Generer une cle : Reusable = oui, Expiration = 90 jours
 AWS_PROFILE=aromaestro-prod aws secretsmanager put-secret-value \
   --secret-id "aromaestro-production-tailscale-auth-key" \
-  --secret-string "tskey-auth-TA-CLE-ICI"
+  --secret-string "<VOTRE-CLE-TAILSCALE>"
 
 # 4. Verifier le plan
 AWS_PROFILE=aromaestro-prod terraform plan
@@ -396,7 +396,7 @@ AWS_PROFILE=aromaestro-dev terraform output web_site_public_ip
 ```bash
 AWS_PROFILE=aromaestro-dev aws secretsmanager put-secret-value \
   --secret-id "aromaestro-development-tailscale-auth-key" \
-  --secret-string "tskey-auth-NOUVELLE-CLE"
+  --secret-string "<VOTRE-NOUVELLE-CLE-TAILSCALE>"
 ```
 
 ### Modifier l'infrastructure
