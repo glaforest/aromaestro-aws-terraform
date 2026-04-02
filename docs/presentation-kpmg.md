@@ -6,7 +6,7 @@ Document de presentation pour revue KPMG.
 
 ## 1. Vue d'ensemble
 
-Aromaestro a deploye une infrastructure AWS multi-compte suivant les bonnes pratiques de l'industrie, inspiree de l'implementation realisee par KPMG pour Solist Technologies.
+Aromaestro a deploye une infrastructure AWS multi-compte suivant les bonnes pratiques de l'industrie et le AWS Well-Architected Framework.
 
 L'infrastructure est entierement geree par **Infrastructure as Code** (Terraform), documentee, auditee et conforme aux standards CIS AWS Foundations Benchmark.
 
@@ -277,29 +277,6 @@ L'infrastructure a ete auditee contre le CIS AWS Foundations Benchmark. Resultat
 | Monitoring (CloudWatch, alertes securite) | Conforme |
 | Networking (pas de SSH ouvert, VPC endpoints) | Conforme |
 | Storage (chiffrement, TLS, pas de public access) | Conforme |
-
-### Comparaison avec l'implementation KPMG/Solist
-
-| Controle | Solist (KPMG) | Aromaestro |
-|---|---|---|
-| Multi-compte | Oui (4 comptes) | Oui (4 comptes) |
-| SCPs / Guardrails | 24 (via Control Tower) | 6 (via Terraform) |
-| Chiffrement EBS | Oui | Oui |
-| Chiffrement S3 | Oui (SSE-S3) | Oui (SSE-KMS + AES256) |
-| Chiffrement RDS | Oui | Oui + TLS enforce |
-| GuardDuty | Oui | Oui |
-| Inspector | Oui | Oui |
-| SecurityHub | Oui | Oui |
-| CloudTrail | Oui (single-region) | Oui (multi-region) |
-| Config | Oui | Oui (4 regles) |
-| VPN | AWS Client VPN | Tailscale (zero-trust) |
-| Pare-feu | AWS Network Firewall | Security Groups (zero inbound) |
-| Backup | Quotidien/hebdo/mensuel | Quotidien/hebdo/mensuel |
-| Patching | Manuel | Automatique |
-| IaC | LZA (CloudFormation) | Terraform |
-| IMDSv2 | Non documente | Enforce |
-| S3 TLS enforce | Non documente | Oui (bucket policy) |
-| SNS chiffrement | Non documente | Oui (KMS) |
 
 ---
 
