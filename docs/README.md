@@ -36,6 +36,10 @@ Documentation technique de l'infrastructure AWS Aromaestro.
 - [Restauration RDS](runbooks/restore-rds.md)
 - [Restauration EC2](runbooks/restore-ec2.md)
 
+### 6. Specs et Plans
+- [Design spec (rev.2)](specs/2026-04-02-aromaestro-aws-infrastructure-design.md)
+- [Plan d'implementation](specs/2026-04-02-aromaestro-aws-infrastructure.md)
+
 ---
 
 ## Estimation des couts
