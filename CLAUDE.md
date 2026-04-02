@@ -98,6 +98,10 @@ docs/
 - **SCPs combined:** Single policy `aromaestro-guardrails` (AWS limit of 5 SCPs per target).
 - **CloudWatch Agent required:** Memory and disk metrics need the CWAgent installed on each EC2.
 - **CloudTrail multi-region:** Required by SecurityHub Foundational Best Practices standard.
+- **IMDSv2 enforced:** `http_tokens = required` on all EC2 instances (CIS EC2.8).
+- **SNS encrypted:** KMS `alias/aws/sns` on all SNS topics (CIS SNS.1).
+- **Default VPC SG restricted:** No ingress/egress rules on default security group (CIS 5.4).
+- **All S3 buckets enforce TLS:** Including Terraform state bucket.
 
 ## Pending Items
 

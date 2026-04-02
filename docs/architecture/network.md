@@ -63,6 +63,10 @@ La NAT instance utilise Amazon Linux 2023 avec IP forwarding et iptables MASQUER
 
 Actives sur chaque VPC, destination S3 (`aromaestro-{env}-logs`), trafic ALL.
 
+## Default Security Group
+
+Le security group par defaut de chaque VPC est restreint (aucune regle ingress/egress) conformement au CIS Benchmark 5.4. Toutes les instances utilisent des security groups dedies.
+
 ## Network ACLs
 
 Default (allow all). Securite enforcee au niveau des Security Groups.

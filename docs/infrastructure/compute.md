@@ -21,6 +21,7 @@ Meme structure en t4g.small. Code pret, pas encore deploye.
 - **CloudWatch Agent** : installe au premier boot via user_data, config dans SSM Parameter Store
 - **AWS CLI v2** : installe au premier boot via user_data (requis sur Ubuntu 24.04 ARM)
 - **SSM Agent** : pre-installe sur Ubuntu, IAM role attache
+- **IMDSv2 enforce** : `http_tokens = required` sur toutes les instances (CIS EC2.8)
 - **EBS chiffre** : gp3 20GB, chiffrement par defaut au niveau du compte
 
 ## Security Groups

@@ -9,12 +9,14 @@
 | S3 (logs) | SSE-S3 (AES256) | AWS managed |
 | RDS | KMS | AWS managed KMS |
 | Terraform State | SSE-KMS | AWS managed KMS |
+| SNS | KMS | AWS managed (alias/aws/sns) |
 
 ## En transit
 
 | Service | Methode |
 |---|---|
-| S3 | Bucket policy deny non-TLS |
+| S3 (tous les buckets) | Bucket policy deny non-TLS |
+| S3 (terraform state) | Bucket policy deny non-TLS |
 | RDS | require_secure_transport = ON |
 | Tailscale | WireGuard (chiffrement bout-en-bout) |
 | SSM Session Manager | TLS |

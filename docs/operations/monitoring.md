@@ -38,6 +38,7 @@
 ## Notifications
 
 - Topic SNS : `aromaestro-{env}-alerts`
+- Chiffrement : KMS (alias/aws/sns)
 - Protocole : email
 
 ## CloudWatch Agent
