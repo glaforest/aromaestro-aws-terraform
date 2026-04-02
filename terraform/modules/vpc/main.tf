@@ -17,6 +17,18 @@ resource "aws_vpc" "main" {
 }
 
 # ============================================================
+# Restrict Default Security Group (CIS 5.4)
+# ============================================================
+
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "${local.name_prefix}-default-sg-restricted"
+  }
+}
+
+# ============================================================
 # Internet Gateway
 # ============================================================
 
@@ -137,6 +149,11 @@ resource "aws_instance" "nat" {
   vpc_security_group_ids      = [aws_security_group.nat_instance[0].id]
   source_dest_check           = false
   associate_public_ip_address = true
+
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
 
   user_data = <<-EOF
     #!/bin/bash

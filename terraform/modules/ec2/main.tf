@@ -167,6 +167,11 @@ resource "aws_instance" "web" {
   vpc_security_group_ids = [aws_security_group.web_app.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
 
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
+
   root_block_device {
     volume_size = 20
     volume_type = "gp3"

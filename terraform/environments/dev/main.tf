@@ -268,6 +268,11 @@ resource "aws_instance" "web_site" {
   vpc_security_group_ids = [aws_security_group.web_site_public.id]
   iam_instance_profile   = "${var.project}-${var.environment}-ec2-profile"
 
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
+
   root_block_device {
     volume_size = 20
     volume_type = "gp3"

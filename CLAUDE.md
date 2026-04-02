@@ -105,7 +105,6 @@ docs/
 - Tailscale auth key rotation: automate with Lambda + EventBridge
 - LogArchive CloudTrail centralization: future work
 - Prod environment deployment: code ready, see getting-started.md etape 5
-- Logarchive provider: still uses assume_role pattern, needs to be updated to direct profile when deployed
 
 ## Dev Environment Resources
 
