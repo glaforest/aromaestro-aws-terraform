@@ -204,12 +204,17 @@ Toutes les instances EC2 forcent **IMDSv2** (`http_tokens = required`), ce qui e
 
 Les sauvegardes sont selectionnees automatiquement via les tags (`Environment`). Toute nouvelle ressource taguee est automatiquement protegee.
 
+### RDS Point-in-Time Recovery
+
+En plus des snapshots quotidiens, RDS sauvegarde les transaction logs en continu (~5 minutes). Ca permet de restaurer la base de donnees a **n'importe quelle seconde** dans la fenetre de retention (3 jours en dev, 7 jours en prod). Inclus gratuitement.
+
 ### Objectifs de reprise
 
-| Metrique | Cible |
-|---|---|
-| **RPO** (perte de donnees maximale) | 24 heures |
-| **RTO** (temps de retablissement) | 1 heure |
+| Metrique | Cible | Detail |
+|---|---|---|
+| **RPO** (perte de donnees maximale) | ~5 minutes (RDS) | Point-in-Time Recovery via transaction logs |
+| **RPO** (fichiers EC2) | 24 heures | Snapshot quotidien AWS Backup |
+| **RTO** (temps de retablissement) | 1 heure | Restauration depuis snapshot ou PITR |
 
 ### Procedure de reprise
 
