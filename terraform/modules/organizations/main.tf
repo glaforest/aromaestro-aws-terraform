@@ -81,8 +81,6 @@ data "aws_iam_policy_document" "guardrails" {
     actions = [
       "cloudtrail:DeleteTrail",
       "cloudtrail:StopLogging",
-      "cloudtrail:UpdateTrail",
-      "cloudtrail:PutEventSelectors",
     ]
     resources = ["*"]
   }
@@ -107,7 +105,6 @@ data "aws_iam_policy_document" "guardrails" {
     actions = [
       "guardduty:DeleteDetector",
       "guardduty:DisassociateFromMasterAccount",
-      "guardduty:UpdateDetector",
     ]
     resources = ["*"]
   }
