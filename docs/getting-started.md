@@ -448,6 +448,21 @@ git push
 
 ## Depannage
 
+### Pas d'acces au Billing / Cost Explorer
+
+**Symptome :** `AccessDeniedException: IAM user access not activated`
+
+Le Billing AWS n'est pas accessible par defaut aux utilisateurs SSO (meme avec AdministratorAccess). Il faut activer un setting dans le Management account :
+
+1. Se connecter en **root user** du Management account (`589389426408`) sur `console.aws.amazon.com` (PAS via le portail SSO — le root, c'est l'email + mot de passe du compte AWS)
+2. Aller dans **Account** (menu coin superieur droit)
+3. Trouver **IAM User and Role Access to Billing Information**
+4. Cliquer **Edit** → cocher **Activate IAM Access** → **Update**
+
+Apres ca, les utilisateurs SSO sur le Management account auront acces au Billing.
+
+**Note :** Les comptes membres (Dev, Prod, LogArchive) n'ont pas acces au billing par defaut — le billing est centralise dans le Management account. La SCP `DenyRootUser` bloque aussi le root sur les comptes membres (c'est voulu). Toujours passer par SSO sur le Management account pour consulter les couts.
+
 ### Session SSO expiree
 
 ```
