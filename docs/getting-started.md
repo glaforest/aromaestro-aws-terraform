@@ -193,6 +193,21 @@ AWS_PROFILE=aromaestro-prod terraform init
 AWS_PROFILE=aromaestro-prod terraform plan
 ```
 
+### Environnement Prod-OTA
+
+```bash
+cd terraform/environments/prod-ota
+
+# Les secrets du cert de code signing sont dans ota.auto.tfvars (gitignored).
+# Le fichier doit exister localement avant tout plan/apply :
+ls ota.auto.tfvars || echo "MISSING - voir docs/infrastructure/ota.md"
+
+AWS_PROFILE=aromaestro-mgmt terraform init
+AWS_PROFILE=aromaestro-prod terraform plan
+```
+
+Voir [infrastructure/ota.md](infrastructure/ota.md) pour le pipeline complet.
+
 ## Deployer a partir de zero (nouvelle infra complete)
 
 Si tu dois tout recreer (nouveau compte AWS, disaster recovery, etc.) :
@@ -307,8 +322,10 @@ nano terraform.tfvars
 AWS_PROFILE=aromaestro-prod terraform init
 
 # 1. Importer les buckets S3 existants (une seule fois)
+#    Note: aromaestro-diffuser-ota est gere par l'environnement prod-ota (state separe), pas ici.
+#    Avant d'appliquer prod, il faut aussi retirer module.existing_diffuser_ota de prod/main.tf
+#    sinon Terraform tentera de creer un bucket qui existe deja dans le state prod-ota.
 AWS_PROFILE=aromaestro-prod terraform import module.existing_backups.aws_s3_bucket.this aromaestro-backups
-AWS_PROFILE=aromaestro-prod terraform import module.existing_diffuser_ota.aws_s3_bucket.this aromaestro-diffuser-ota
 AWS_PROFILE=aromaestro-prod terraform import module.existing_ota.aws_s3_bucket.this aromaestro-ota
 
 # 2. Deployer le secret Tailscale d'abord
@@ -352,6 +369,54 @@ AWS_PROFILE=aromaestro-prod aws ssm send-command \
   ]' \
   --timeout-seconds 600
 ```
+
+### Etape 5.5 : Deployer le Prod-OTA
+
+Pipeline IoT OTA pour les diffuseurs ESP32-C5 en production. Environnement Terraform isole dans le compte prod. Voir [infrastructure/ota.md](infrastructure/ota.md) pour le detail des ressources.
+
+```bash
+cd terraform/environments/prod-ota
+
+# 1. Creer ota.auto.tfvars (gitignored) avec le PEM et la cle du cert de code signing.
+#    Source: repo firmware, racine (codesign_cert.pem + codesign_key.pem).
+cp ota.auto.tfvars.example ota.auto.tfvars
+# Editer ota.auto.tfvars et coller le contenu de codesign_cert.pem dans ota_signing_cert_pem,
+# et celui de codesign_key.pem dans ota_signing_cert_key_pem.
+
+# 2. Init
+AWS_PROFILE=aromaestro-mgmt terraform init
+
+# 3. Importer le bucket S3 existant (le bucket pre-existe dans AWS)
+AWS_PROFILE=aromaestro-prod terraform import module.diffuser_ota_bucket.aws_s3_bucket.this aromaestro-diffuser-ota
+AWS_PROFILE=aromaestro-prod terraform import module.diffuser_ota_bucket.aws_s3_bucket_versioning.this aromaestro-diffuser-ota
+AWS_PROFILE=aromaestro-prod terraform import module.diffuser_ota_bucket.aws_s3_bucket_server_side_encryption_configuration.this aromaestro-diffuser-ota
+AWS_PROFILE=aromaestro-prod terraform import module.diffuser_ota_bucket.aws_s3_bucket_public_access_block.this aromaestro-diffuser-ota
+
+# 4. Plan + apply
+AWS_PROFILE=aromaestro-prod terraform plan
+AWS_PROFILE=aromaestro-prod terraform apply
+
+# 5. Recuperer les credentials ota_user et les copier dans le .env du repo firmware
+AWS_PROFILE=aromaestro-prod terraform output -raw ota_user_access_key_id
+AWS_PROFILE=aromaestro-prod terraform output -raw ota_user_secret_access_key
+
+# Mettre a jour /Applications/Work/Diffusers_Firmwares/diffuser_firmware_esp32/scripts/.env :
+#   AWS_ACCESS_KEY_ID=<output>
+#   AWS_SECRET_ACCESS_KEY=<output>
+#   AWS_REGION=ca-central-1
+#   OTA_S3_BUCKET=aromaestro-diffuser-ota
+#   OTA_SIGNING_PROFILE=AromaestroESP32C5OTACodeSign
+#   OTA_IAM_ROLE_ARN=$(terraform output -raw ota_iam_role_arn)
+```
+
+**Verification :**
+
+```bash
+cd /Applications/Work/Diffusers_Firmwares/diffuser_firmware_esp32
+./scripts/deploy-ota.sh --check
+```
+
+Doit afficher `arn:aws:iam::872515273944:user/service-accounts/ota_user` comme identite, lister le signing profile `AromaestroESP32C5OTACodeSign`, le thing group `Diffusers`, et confirmer l'acces au bucket.
 
 ## Operations courantes
 

@@ -4,11 +4,22 @@
 
 ### Existants (compte Prod, a importer en Phase 3)
 
+Geres dans l'environnement `prod/` (non encore deploye) :
+
 | Bucket | Usage |
 |---|---|
 | aromaestro-backups | Backups manuels |
-| aromaestro-diffuser-ota | OTA firmware diffuseurs (IoT) |
-| aromaestro-ota | OTA firmware |
+| aromaestro-ota | OTA firmware (legacy, ESP_Wrover) |
+
+### Prod-OTA (compte Prod, environnement isole, deploye)
+
+Geres dans l'environnement `prod-ota/` (state `env/prod-ota/terraform.tfstate`) :
+
+| Bucket | Usage | Config |
+|---|---|---|
+| aromaestro-diffuser-ota | OTA firmware diffuseurs ESP32-C5 (IoT, en prod) | Versioning active, SSE-S3 (AES256), TLS enforce, lifecycle expiration 90j sur prefix `signed/` |
+
+Voir [ota.md](ota.md) pour le pipeline complet (ACM cert, Signer profile, IoT role, ota_user).
 
 ### Dev
 

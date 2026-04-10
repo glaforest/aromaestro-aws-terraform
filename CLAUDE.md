@@ -42,6 +42,11 @@ cd terraform/environments/prod
 AWS_PROFILE=aromaestro-prod terraform plan
 AWS_PROFILE=aromaestro-prod terraform apply
 
+# Prod-OTA environment (IoT OTA pipeline, deployed)
+cd terraform/environments/prod-ota
+AWS_PROFILE=aromaestro-prod terraform plan
+AWS_PROFILE=aromaestro-prod terraform apply
+
 # State backend bootstrap (one-time, already done)
 cd terraform/backend
 AWS_PROFILE=aromaestro-mgmt terraform apply
@@ -69,6 +74,7 @@ terraform/
     management/            # Organizations, SCPs, Budgets
     dev/                   # Full dev environment (all modules wired up, deployed)
     prod/                  # Prod environment (code ready, not yet deployed)
+    prod-ota/              # IoT OTA pipeline (same prod account, isolated state, deployed)
     logarchive/            # LogArchive account (placeholder, not yet implemented)
 docs/
   README.md                # Master index
@@ -86,6 +92,7 @@ docs/
 - **Phase 1 (Foundation):** DONE - accounts, SSO, state backend, SCPs, budgets
 - **Phase 2 (Dev):** DONE - 108 resources deployed
 - **Phase 3 (Prod):** CODE READY, NOT YET DEPLOYED - uses same modules, see getting-started.md for deploy steps
+- **Phase 3.5 (Prod-OTA):** DONE - IoT OTA pipeline for ESP32-C5 diffuser firmware (separate Terraform env in the prod account, isolated state)
 
 ## Key Architecture Decisions
 
@@ -102,6 +109,8 @@ docs/
 - **SNS encrypted:** KMS `alias/aws/sns` on all SNS topics (CIS SNS.1).
 - **Default VPC SG restricted:** No ingress/egress rules on default security group (CIS 5.4).
 - **All S3 buckets enforce TLS:** Including Terraform state bucket.
+- **Prod-OTA is its own Terraform env:** `terraform/environments/prod-ota/` owns the AWS IoT OTA pipeline (bucket, ACM cert, Signer profile, IoT role, ota_user). Isolated state (`env/prod-ota/terraform.tfstate`) so the pipeline isn't coupled to the unapplied Phase 3 `prod/` code. Same prod AWS account, same backend bucket.
+- **Signer profile via terraform_data:** AWS Signer requires `signingParameters.certname` for FreeRTOS OTA, but the hashicorp/aws provider doesn't expose that argument. `prod-ota` manages the profile through `terraform_data` + `local-exec` calling `aws signer put-signing-profile`. Create-only: changing the cert requires picking a new profile name because canceled Signer names are permanently reserved.
 
 ## Pending Items
 
@@ -109,6 +118,7 @@ docs/
 - Tailscale auth key rotation: automate with Lambda + EventBridge
 - LogArchive CloudTrail centralization: future work
 - Prod environment deployment: code ready, see getting-started.md etape 5
+- Clean up `module.existing_diffuser_ota` from `terraform/environments/prod/main.tf` when Phase 3 prod is eventually deployed — the bucket is now owned by `prod-ota` state, so leaving it in `prod/main.tf` would cause a state conflict on Phase 3 apply
 
 ## Dev Environment Resources
 
@@ -125,3 +135,16 @@ docs/
 | Monitoring | 23 CloudWatch alarms, SNS email alerts, 2 EventBridge rules (GuardDuty/Inspector) |
 | Backup | Daily 7:00 UTC, 3-day retention |
 | Patching | Sunday 8:00 UTC (3AM EST), automatic |
+
+## Prod-OTA Environment Resources
+
+| Resource | Details |
+|---|---|
+| S3 | aromaestro-diffuser-ota (imported, versioned, SSE-S3, TLS enforced, 90d expiration on signed/ prefix) |
+| ACM cert | CN=DiffuserOTACodeSign subject, ECDSA P-256, serial 091AC033257B23E5BB494764E4CA5B9213F3E4C7, prevent_destroy |
+| Signer profile | AromaestroESP32C5OTACodeSign (platform AmazonFreeRTOS-Default, certname=/cert.pem, managed via terraform_data + local-exec) |
+| IAM role | AWSIoTOTAUpdateRole (trust iot.amazonaws.com, inline S3+Signer+IoT Jobs/Streams+PassRole self) |
+| IAM user | ota_user (service account, path /service-accounts/, OtaDeployPolicy with S3+IoT OTA+Signer+scoped PassRole) |
+| Consumed by | `scripts/deploy-ota.sh` in the firmware repo at `/Applications/Work/Diffusers_Firmwares/diffuser_firmware_esp32` |
+
+See `docs/infrastructure/ota.md` for full details.

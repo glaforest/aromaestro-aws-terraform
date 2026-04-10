@@ -27,7 +27,7 @@ MFA obligatoire sur tous les utilisateurs.
 |---|---|---|
 | aromaestro-dev | 051370880327 | Terraform dev, operations dev |
 | aromaestro-mgmt | 589389426408 | Terraform management, SCPs, budgets |
-| aromaestro-prod | 872515273944 | Terraform prod (Phase 3) |
+| aromaestro-prod | 872515273944 | Terraform prod (Phase 3) + prod-ota (IoT OTA pipeline) |
 | aromaestro-logarchive | 315466292610 | Terraform logarchive |
 
 ### Commandes Terraform
@@ -44,3 +44,14 @@ aws sso login --profile aromaestro-dev
 ```
 
 Le backend S3 utilise toujours le profil `aromaestro-mgmt` (configure dans `versions.tf`).
+
+## Environnements Terraform dans le compte Prod
+
+Le compte Prod heberge **deux environnements Terraform isoles** avec des state files distincts :
+
+| Environnement | Terraform dir | State key | Statut | Scope |
+|---|---|---|---|---|
+| `prod` | `terraform/environments/prod/` | `env/prod/terraform.tfstate` | Code pret, non deploye (Phase 3) | VPC, EC2, RDS, S3 generiques, Backup, Security services |
+| `prod-ota` | `terraform/environments/prod-ota/` | `env/prod-ota/terraform.tfstate` | Deploye | Pipeline IoT OTA (bucket firmware, ACM cert, Signer, IoT role, ota_user) |
+
+Les deux environnements utilisent le meme backend S3 (`aromaestro-terraform-state` avec profil `aromaestro-mgmt`) mais des cles distinctes, donc aucun risque de collision sur les locks ou les ressources en state. Voir [infrastructure/ota.md](../infrastructure/ota.md) pour le detail de prod-ota.

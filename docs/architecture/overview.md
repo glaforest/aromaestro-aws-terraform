@@ -13,6 +13,8 @@ Infrastructure AWS multi-compte pour Aromaestro utilisant une approche zero-trus
 | Dev | Miroir simplifie de Prod | 051370880327 |
 | LogArchive | Centralisation des logs CloudTrail | 315466292610 |
 
+> Le compte Prod heberge deux environnements Terraform isoles : `prod/` (workloads Phase 3) et `prod-ota/` (pipeline IoT OTA pour firmware ESP32-C5). Meme compte AWS, state files distincts. Voir [infrastructure/ota.md](../infrastructure/ota.md).
+
 ## Principes architecturaux
 
 - **Zero-trust** : Tailscale comme overlay reseau, aucun port inbound sur les instances privees
