@@ -11,6 +11,15 @@
 # Never regenerate the signing cert — prod devices embed it and would reject
 # updates signed by a different cert.
 
+locals {
+  # The old DiffuserOTACodeSign profile was canceled on 2026-04-10 because it
+  # had been created without signingParameters.certname, which FreeRTOS OTA
+  # requires. Canceled Signer profiles permanently reserve their name, so we
+  # moved to a new profile name tied to the hardware platform.
+  ota_signing_profile_name = "AromaestroESP32C5OTACodeSign"
+  ota_signing_cert_path    = "/cert.pem" # placeholder — devices embed the cert at compile time and never read this path
+}
+
 # ============================================================
 # S3 bucket for firmware artifacts
 # ============================================================
@@ -67,23 +76,47 @@ resource "aws_acm_certificate" "ota_signing" {
 }
 
 # ============================================================
-# AWS Signer profile DiffuserOTACodeSign
+# AWS Signer profile AromaestroESP32C5OTACodeSign
 # ============================================================
-# Name is hardcoded in scripts/deploy-ota.sh in the firmware repo — do not rename.
-resource "aws_signer_signing_profile" "ota" {
-  name        = "DiffuserOTACodeSign"
-  platform_id = "AmazonFreeRTOS-Default"
-
-  # AmazonFreeRTOS-Default rejects custom signature_validity_period — the
-  # signature lifetime is fixed by the platform. The brief's 135-month value is
-  # unsupported at the API layer.
-
-  signing_material {
+# Managed via terraform_data + local-exec because the hashicorp/aws provider's
+# aws_signer_signing_profile resource does not expose signing_parameters, which
+# FreeRTOS OTA requires (certname).
+#
+# AWS Signer profiles cannot be updated in place — put-signing-profile errors
+# with "Profile already exists" on any existing name. The local-exec is
+# therefore a create-only helper: it queries the profile first, and only calls
+# put-signing-profile if no Active profile with that name exists.
+#
+# To change the cert ARN or certname: (1) cancel the current profile, (2) pick
+# a new local.ota_signing_profile_name (canceled names are permanently reserved),
+# (3) update the firmware repo's scripts/.env OTA_SIGNING_PROFILE. Do NOT attempt
+# automated rotation here.
+resource "terraform_data" "ota_signing_profile" {
+  triggers_replace = {
+    profile_name    = local.ota_signing_profile_name
+    platform_id     = "AmazonFreeRTOS-Default"
     certificate_arn = aws_acm_certificate.ota_signing.arn
+    certname        = local.ota_signing_cert_path
   }
 
-  tags = {
-    Name = "DiffuserOTACodeSign"
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -e
+      status=$(aws signer get-signing-profile \
+        --profile-name ${self.triggers_replace.profile_name} \
+        --region ca-central-1 \
+        --query 'status' --output text 2>/dev/null || echo NOTFOUND)
+      if [ "$status" = "Active" ]; then
+        echo "Signer profile ${self.triggers_replace.profile_name} already Active — skipping put-signing-profile."
+        exit 0
+      fi
+      aws signer put-signing-profile \
+        --region ca-central-1 \
+        --profile-name ${self.triggers_replace.profile_name} \
+        --platform-id ${self.triggers_replace.platform_id} \
+        --signing-material certificateArn=${self.triggers_replace.certificate_arn} \
+        --signing-parameters certname=${self.triggers_replace.certname}
+    EOT
   }
 }
 
@@ -142,6 +175,38 @@ data "aws_iam_policy_document" "iot_ota_inline" {
       "signer:StartSigningJob",
     ]
     resources = ["*"]
+  }
+
+  # The OTA service assumes this role during CreateOTAUpdate to provision the
+  # underlying IoT Jobs and Streams on behalf of the caller. Without these,
+  # CreateOTAUpdate returns CREATE_FAILED with iot:CreateJob AccessDenied.
+  # See https://docs.aws.amazon.com/freertos/latest/userguide/create-service-role.html
+  statement {
+    sid    = "IoTJobAndStream"
+    effect = "Allow"
+    actions = [
+      "iot:CreateJob",
+      "iot:DescribeJob",
+      "iot:UpdateJob",
+      "iot:CancelJob",
+      "iot:DeleteJob",
+      "iot:DescribeJobExecution",
+      "iot:CreateStream",
+      "iot:DescribeStream",
+      "iot:DeleteStream",
+      "iot:GetOTAUpdate",
+    ]
+    resources = ["*"]
+  }
+
+  # IoT OTA passes this same role to the downstream IoT Stream service to read
+  # the signed firmware from S3. Without this, CreateOTAUpdate returns
+  # CREATE_FAILED with iam:PassRole AccessDenied.
+  statement {
+    sid       = "PassRoleToIoT"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = [aws_iam_role.iot_ota_service.arn]
   }
 }
 

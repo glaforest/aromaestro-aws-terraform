@@ -17,7 +17,7 @@ output "ota_s3_bucket" {
 
 output "ota_signing_profile" {
   description = "AWS Signer profile name for FreeRTOS OTA"
-  value       = aws_signer_signing_profile.ota.name
+  value       = local.ota_signing_profile_name
 }
 
 output "ota_iam_role_arn" {
