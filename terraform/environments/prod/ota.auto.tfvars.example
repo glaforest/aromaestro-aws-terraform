@@ -1,0 +1,15 @@
+# Copy to ota.auto.tfvars (gitignored) and paste the real PEM contents.
+# Cert source: firmware repo root — codesign_cert.pem and codesign_key.pem.
+# DO NOT regenerate — prod diffusers would reject updates signed by a different cert.
+
+ota_signing_cert_pem = <<-EOT
+-----BEGIN CERTIFICATE-----
+...paste codesign_cert.pem contents here...
+-----END CERTIFICATE-----
+EOT
+
+ota_signing_cert_key_pem = <<-EOT
+-----BEGIN EC PRIVATE KEY-----
+...paste codesign_key.pem contents here...
+-----END EC PRIVATE KEY-----
+EOT

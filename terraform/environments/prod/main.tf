@@ -5,11 +5,11 @@
 module "logs_bucket" {
   source = "../../modules/s3"
 
-  bucket_name              = "aromaestro-prod-logs"
-  enable_versioning        = false
+  bucket_name               = "aromaestro-prod-logs"
+  enable_versioning         = false
   lifecycle_expiration_days = 90
-  force_tls                = false # Policy managed by security module
-  sse_algorithm            = "AES256"
+  force_tls                 = false # Policy managed by security module
+  sse_algorithm             = "AES256"
 
   tags = { Application = "shared" }
 }
@@ -31,10 +31,10 @@ module "assets_bucket" {
 module "existing_backups" {
   source = "../../modules/s3"
 
-  bucket_name           = "aromaestro-backups"
-  enable_versioning     = true
+  bucket_name            = "aromaestro-backups"
+  enable_versioning      = true
   lifecycle_glacier_days = 30
-  force_tls             = true
+  force_tls              = true
 
   tags = { Application = "shared" }
 }
@@ -69,8 +69,8 @@ module "vpc" {
   project     = var.project
   environment = var.environment
 
-  vpc_cidr        = "10.0.0.0/16"
-  public_nat_cidr = "10.0.100.0/24"
+  vpc_cidr           = "10.0.0.0/16"
+  public_nat_cidr    = "10.0.100.0/24"
   private_app_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
   private_data_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
   availability_zones = ["ca-central-1a", "ca-central-1b"]
@@ -207,8 +207,8 @@ module "ec2" {
     "web-openclaw"  = "openclaw"
   }
 
-  tailscale_auth_key_secret_arn      = aws_secretsmanager_secret.tailscale.arn
-  cloudwatch_agent_config_ssm_param  = aws_ssm_parameter.cw_agent_config.name
+  tailscale_auth_key_secret_arn     = aws_secretsmanager_secret.tailscale.arn
+  cloudwatch_agent_config_ssm_param = aws_ssm_parameter.cw_agent_config.name
 }
 
 # ============================================================
