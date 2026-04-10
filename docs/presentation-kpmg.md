@@ -12,7 +12,7 @@ L'infrastructure est entierement geree par **Infrastructure as Code** (Terraform
 
 **Region :** ca-central-1 (Canada - donnees residentes au Canada)
 **Approche reseau :** Zero-trust avec Tailscale (aucun port SSH ouvert)
-**Environnements :** Dev (deploye), Prod (code pret)
+**Environnements :** Dev (deploye), Prod (code pret), Prod-OTA (deploye - pipeline IoT OTA firmware)
 
 ---
 
@@ -294,7 +294,7 @@ Toute la documentation technique est disponible dans le repository Git :
 | [README.md](README.md) | Index principal avec liens vers toutes les sections |
 | [getting-started.md](getting-started.md) | Guide complet pour nouvel ordinateur et deploiement |
 | [architecture/](architecture/) | Comptes, reseau, vue d'ensemble |
-| [infrastructure/](infrastructure/) | EC2, RDS, S3 |
+| [infrastructure/](infrastructure/) | EC2, RDS, S3, IoT OTA |
 | [security/](security/) | SCPs, IAM, chiffrement |
 | [operations/](operations/) | Monitoring, backup, patching |
 | [runbooks/](runbooks/) | Procedures de restauration et incident response |
