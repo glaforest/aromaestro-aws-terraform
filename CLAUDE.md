@@ -47,6 +47,11 @@ cd terraform/environments/prod-ota
 AWS_PROFILE=aromaestro-prod terraform plan
 AWS_PROFILE=aromaestro-prod terraform apply
 
+# Prod-IoT environment (IoT rules + Lambdas -> dev/prod API, imported 2026-10-05)
+cd terraform/environments/prod-iot
+AWS_PROFILE=aromaestro-prod terraform plan
+AWS_PROFILE=aromaestro-prod terraform apply
+
 # State backend bootstrap (one-time, already done)
 cd terraform/backend
 AWS_PROFILE=aromaestro-mgmt terraform apply
@@ -75,6 +80,7 @@ terraform/
     dev/                   # Full dev environment (all modules wired up, deployed)
     prod/                  # Prod environment (code ready, not yet deployed)
     prod-ota/              # IoT OTA pipeline (same prod account, isolated state, deployed)
+    prod-iot/              # IoT topic rules + Lambdas posting MQTT events to dev and prod sites
     logarchive/            # LogArchive account (placeholder, not yet implemented)
 docs/
   README.md                # Master index
@@ -110,6 +116,7 @@ docs/
 - **Default VPC SG restricted:** No ingress/egress rules on default security group (CIS 5.4).
 - **All S3 buckets enforce TLS:** Including Terraform state bucket.
 - **Prod-OTA is its own Terraform env:** `terraform/environments/prod-ota/` owns the AWS IoT OTA pipeline (bucket, ACM cert, Signer profile, IoT role, ota_user). Isolated state (`env/prod-ota/terraform.tfstate`) so the pipeline isn't coupled to the unapplied Phase 3 `prod/` code. Same prod AWS account, same backend bucket.
+- **Prod-IoT is its own Terraform env:** `terraform/environments/prod-iot/` owns every IoT topic rule and the Lambdas that POST MQTT events to the sites. Each flow has a dev rule and a prod rule, both enabled, so dev.aromaestro.com and www.aromaestro.com both receive every event. Built by hand, imported on 2026-10-05; names kept as found. `API_KEY` values live in gitignored `iot.auto.tfvars`. See `docs/infrastructure/iot.md`.
 - **Signer profile via terraform_data:** AWS Signer requires `signingParameters.certname` for FreeRTOS OTA, but the hashicorp/aws provider doesn't expose that argument. `prod-ota` manages the profile through `terraform_data` + `local-exec` calling `aws signer put-signing-profile`. Create-only: changing the cert requires picking a new profile name because canceled Signer names are permanently reserved.
 
 ## Pending Items

@@ -1,0 +1,9 @@
+# Copy to iot.auto.tfvars (gitignored) and paste the real keys.
+# dev  = API key accepted by dev.aromaestro.com
+# prod = AWS_IOT_LAMBDA_API_KEY from the prod site's config.php
+# Never commit the real values.
+
+api_keys = {
+  dev  = "...dev key..."
+  prod = "...prod key..."
+}

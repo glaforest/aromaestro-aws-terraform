@@ -31,6 +31,7 @@ Documentation technique de l'infrastructure AWS Aromaestro.
 - [Base de donnees RDS](infrastructure/database.md)
 - [Stockage S3](infrastructure/storage.md)
 - [IoT OTA (firmware delivery)](infrastructure/ota.md)
+- [IoT -> API (pipeline MQTT dev + prod)](infrastructure/iot.md)
 
 ### 3. Securite
 - [Services de securite (SCPs, GuardDuty, Inspector, etc.)](security/services.md)
@@ -69,7 +70,7 @@ Documentation technique de l'infrastructure AWS Aromaestro.
 | Dev | 051370880327 | Environnement de developpement |
 | LogArchive | 315466292610 | Logs d'audit |
 
-> Le compte Prod heberge deux environnements Terraform isoles : `prod/` (workloads principaux Phase 3, code pret non deploye) et `prod-ota/` (pipeline IoT OTA firmware ESP32-C5, deploye). Les deux partagent le meme compte AWS (872515273944) mais ont des state files distincts.
+> Le compte Prod heberge trois environnements Terraform isoles : `prod/` (workloads principaux Phase 3, code pret non deploye), `prod-ota/` (pipeline IoT OTA firmware ESP32-C5, deploye) et `prod-iot/` (regles IoT et Lambdas MQTT -> API dev/prod, importees). Tous partagent le meme compte AWS (872515273944) mais ont des state files distincts.
 
 ## Commandes rapides
 
