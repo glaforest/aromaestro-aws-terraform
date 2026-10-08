@@ -198,7 +198,6 @@ locals {
 
   online_status_policy_arns = toset([
     "arn:aws:iam::872515273944:policy/service-role/aws-iot-rule-Online_Status-action-1-role-test",
-    "arn:aws:iam::aws:policy/AWSIoTFullAccess",
   ])
 
   role_policy_attachments = merge([
@@ -340,13 +339,28 @@ resource "aws_iam_role" "online_status_republish" {
   })
 }
 
-# Imported as found. AWSIoTFullAccess is far broader than a republish needs;
-# the console-generated policy alone should be enough. Tighten separately.
+# Console-generated policy, kept attached but ineffective: its resource is
+# topic/$$aws/things/+/shadow/update, and IAM matches neither the $$ escape nor
+# the MQTT "+" wildcard. The republish only worked through AWSIoTFullAccess,
+# which was removed on 2026-10-08 in favour of the inline policy below.
 resource "aws_iam_role_policy_attachment" "online_status_republish" {
   for_each = local.online_status_policy_arns
 
   role       = aws_iam_role.online_status_republish.name
   policy_arn = each.value
+}
+
+resource "aws_iam_role_policy" "online_status_republish" {
+  name = "republish-online-status-to-shadow"
+  role = aws_iam_role.online_status_republish.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "iot:Publish"
+      Resource = "arn:aws:iot:${local.region}:${local.account_id}:topic/$aws/things/*/shadow/update"
+    }]
+  })
 }
 
 resource "aws_iot_topic_rule" "online_status" {
