@@ -6,8 +6,8 @@
 # dev.aromaestro.com, the other to www.aromaestro.com. Both sites must receive
 # every event.
 #
-# All of this was created by hand and imported here on 2026-10-05 (see
-# imports.tf). Names, role paths and statement ids are kept as found, including
+# All of this was created by hand and imported here on 2026-10-05 (import
+# blocks removed once applied, see git history). Names, role paths and statement ids are kept as found, including
 # the "iotCommanResponseToApi" typo, because renaming forces a replacement.
 
 locals {

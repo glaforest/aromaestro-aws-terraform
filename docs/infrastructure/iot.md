@@ -12,7 +12,7 @@ Les diffuseurs publient sur l'unique endpoint IoT du compte Prod. Chaque flux MQ
 | State S3 key | `env/prod-iot/terraform.tfstate` |
 | Region | ca-central-1 |
 
-Créé à la main, importé dans Terraform le 2026-10-05 (`imports.tf`). Les noms sont conservés tels quels, y compris la faute `iotCommanResponseToApi` : renommer forcerait un remplacement.
+Créé à la main, importé dans Terraform le 2026-10-05 (blocs `import` retirés après application, voir l'historique git). Les noms sont conservés tels quels, y compris la faute `iotCommanResponseToApi` : renommer forcerait un remplacement.
 
 ## Flux
 
