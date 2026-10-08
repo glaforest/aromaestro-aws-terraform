@@ -49,6 +49,15 @@ printf '%s' "$KEY" | shasum -a 256
 php -r 'include "config.php"; echo hash("sha256", AWS_IOT_LAMBDA_API_KEY), "\n";'
 ```
 
+## Sécurité, journalisation, indexation et domaine (`iot-security.tf`)
+
+Importés le 2026-10-08 après l'audit de flotte :
+- `Diffuser_Policy` : document dans `prod-iot/policies/diffuser-policy.json`. Toute modification crée une nouvelle version (5 au maximum, la plus ancienne non par défaut est supprimée).
+- Journalisation IoT v2 au niveau ERROR via `service-role/IoTLoggingRole` (groupe `AWSIotLogsV2`).
+- Indexation de flotte : REGISTRY_AND_SHADOW + connectivité STATUS. Changer un mode relance une réindexation.
+- Domaine `iot.aromaestro.com` (config `aromaestro-iot`, DATA) et son certificat ACM, protégés par `prevent_destroy`. Le firmware >= 1.1.2 s'y connecte d'abord. Le CNAME de validation ACM `_b37adb6e1c3e1a423e51df2c9bc7eb85.iot` dans Cloudflare ne doit jamais être supprimé.
+- Hors Terraform : certificats d'appareils (fleet provisioning) et DNS Cloudflare.
+
 ## Points connus
 
 - Le rôle `service-role/test` d'`Online_Status` a `AWSIoTFullAccess` en plus de sa politique générée par la console. Beaucoup trop large pour un republish : à resserrer.

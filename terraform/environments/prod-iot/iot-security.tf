@@ -107,3 +107,22 @@ resource "aws_iot_domain_configuration" "aromaestro" {
     prevent_destroy = true
   }
 }
+
+# ------------------------------------------------------------
+# Fleet indexing
+# ------------------------------------------------------------
+# No import exists: Terraform (re)sends UpdateIndexingConfiguration. Adopted on
+# 2026-10-08 with the values already live, while the fleet was 23 things, so a
+# possible reindex was cheap. Changing a mode later triggers a reindex.
+resource "aws_iot_indexing_configuration" "this" {
+  thing_indexing_configuration {
+    thing_indexing_mode              = "REGISTRY_AND_SHADOW"
+    thing_connectivity_indexing_mode = "STATUS"
+    device_defender_indexing_mode    = "OFF"
+    named_shadow_indexing_mode       = "OFF"
+  }
+
+  thing_group_indexing_configuration {
+    thing_group_indexing_mode = "OFF"
+  }
+}
