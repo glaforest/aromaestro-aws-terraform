@@ -1,0 +1,57 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "iot:Connect",
+      "Resource": "arn:aws:iot:ca-central-1:872515273944:client/${iot:Connection.Thing.ThingName}",
+      "Condition": {
+        "Bool": {
+          "iot:Connection.Thing.IsAttached": "true"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:GetThingShadow",
+        "iot:UpdateThingShadow"
+      ],
+      "Resource": "arn:aws:iot:ca-central-1:872515273944:thing/${iot:Connection.Thing.ThingName}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iot:Publish",
+      "Resource": [
+        "arn:aws:iot:ca-central-1:872515273944:topic/aromaestro/things/${iot:Connection.Thing.ThingName}/*",
+        "arn:aws:iot:ca-central-1:872515273944:topic/$aws/things/${iot:Connection.Thing.ThingName}/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iot:Subscribe",
+      "Resource": [
+        "arn:aws:iot:ca-central-1:872515273944:topicfilter/aromaestro/things/${iot:Connection.Thing.ThingName}/*",
+        "arn:aws:iot:ca-central-1:872515273944:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iot:Receive",
+      "Resource": [
+        "arn:aws:iot:ca-central-1:872515273944:topic/aromaestro/things/${iot:Connection.Thing.ThingName}/*",
+        "arn:aws:iot:ca-central-1:872515273944:topic/$aws/things/${iot:Connection.Thing.ThingName}/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:DescribeJobExecution",
+        "iot:GetPendingJobExecutions",
+        "iot:UpdateJobExecution",
+        "iot:StartNextPendingJobExecution"
+      ],
+      "Resource": "arn:aws:iot:ca-central-1:872515273944:thing/${iot:Connection.Thing.ThingName}"
+    }
+  ]
+}
