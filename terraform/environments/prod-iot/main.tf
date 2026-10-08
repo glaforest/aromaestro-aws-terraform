@@ -24,7 +24,7 @@ locals {
     shadow = {
       source_dir   = "shadow"
       handler      = "index.handler"
-      runtime      = "nodejs20.x"
+      runtime      = "nodejs22.x"
       arch         = "arm64"
       api_route    = "diffuser_mqtt_shadow"
       sql          = "SELECT *, topic() AS topic FROM '$aws/things/+/shadow/update/documents'"
@@ -188,6 +188,12 @@ locals {
     ])
   }
 
+  # Node 20 is end of life. Shadow moves to nodejs22.x dev first; prod stays
+  # pinned until a shadow update is confirmed on dev (2026-10-08).
+  runtime_override = {
+    iotShadowToApiProd = "nodejs20.x"
+  }
+
   rule_sql = {
     for fn, f in local.functions : fn => (
       f.site == "dev"
@@ -279,7 +285,7 @@ resource "aws_lambda_function" "iot" {
   function_name    = each.key
   description      = each.value.description
   role             = aws_iam_role.lambda[each.key].arn
-  runtime          = local.flows[each.value.flow].runtime
+  runtime          = lookup(local.runtime_override, each.key, local.flows[each.value.flow].runtime)
   handler          = local.flows[each.value.flow].handler
   architectures    = [local.flows[each.value.flow].arch]
   memory_size      = 128
