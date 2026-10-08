@@ -24,6 +24,8 @@ Créé à la main, importé dans Terraform le 2026-10-05 (`imports.tf`). Les nom
 | Provisioning | `$aws/events/thing/+/created` | `CaptureDeviceProvisioning` -> `ProvisionDevices` | `CaptureDeviceProvisioningProd` -> `ProvisionDevicesProd` | `api/diffuser_provision` |
 | Online status | `aromaestro/things/+/online_status` | `Online_Status` : republish vers `$aws/things/<thing>/shadow/update` | (aucune : le shadow déclenche les deux règles shadow) | — |
 
+**Filtrage dev (depuis le 2026-10-08) :** les règles dev ne reçoivent que les appareils listés dans `prod-iot/dev-devices.tf` (`WHERE topic(3) = '<serial>' OR ...`, `thingName` pour le provisioning). Tous les autres diffuseurs n'arrivent qu'en prod. Pour envoyer une nouvelle carte de test en dev, ajouter son numéro de série dans la liste et faire l'`apply` **avant** de la provisionner.
+
 Les Lambdas dev et prod d'un flux exécutent le même code (`prod-iot/lambda/<flux>/`). Seules `API_URL` et `API_KEY` diffèrent.
 
 ## Clés API

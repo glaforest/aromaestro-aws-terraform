@@ -22,36 +22,40 @@ locals {
   # One entry per MQTT flow. The dev and prod Lambdas run the same source.
   flows = {
     shadow = {
-      source_dir = "shadow"
-      handler    = "index.handler"
-      runtime    = "nodejs20.x"
-      arch       = "arm64"
-      api_route  = "diffuser_mqtt_shadow"
-      sql        = "SELECT *, topic() AS topic FROM '$aws/things/+/shadow/update/documents'"
+      source_dir   = "shadow"
+      handler      = "index.handler"
+      runtime      = "nodejs20.x"
+      arch         = "arm64"
+      api_route    = "diffuser_mqtt_shadow"
+      sql          = "SELECT *, topic() AS topic FROM '$aws/things/+/shadow/update/documents'"
+      device_field = "topic(3)"
     }
     logs = {
-      source_dir = "logs"
-      handler    = "index.handler"
-      runtime    = "nodejs22.x"
-      arch       = "x86_64"
-      api_route  = "diffuser_logs"
-      sql        = "SELECT *, topic(3) as serial FROM 'aromaestro/things/+/logs'"
+      source_dir   = "logs"
+      handler      = "index.handler"
+      runtime      = "nodejs22.x"
+      arch         = "x86_64"
+      api_route    = "diffuser_logs"
+      sql          = "SELECT *, topic(3) as serial FROM 'aromaestro/things/+/logs'"
+      device_field = "topic(3)"
     }
     command_response = {
-      source_dir = "command-response"
-      handler    = "index.handler"
-      runtime    = "nodejs22.x"
-      arch       = "arm64"
-      api_route  = "diffuser_mqtt_command_response"
-      sql        = "SELECT *, topic(3) as serial FROM 'aromaestro/things/+/commands/response'"
+      source_dir   = "command-response"
+      handler      = "index.handler"
+      runtime      = "nodejs22.x"
+      arch         = "arm64"
+      api_route    = "diffuser_mqtt_command_response"
+      sql          = "SELECT *, topic(3) as serial FROM 'aromaestro/things/+/commands/response'"
+      device_field = "topic(3)"
     }
     provision = {
-      source_dir = "provision"
-      handler    = "lambda_function.handler"
-      runtime    = "nodejs22.x"
-      arch       = "arm64"
-      api_route  = "diffuser_provision"
-      sql        = "SELECT thingName, eventType, operation, timestamp() as provisioned_at FROM '$aws/events/thing/+/created'"
+      source_dir   = "provision"
+      handler      = "lambda_function.handler"
+      runtime      = "nodejs22.x"
+      arch         = "arm64"
+      api_route    = "diffuser_provision"
+      sql          = "SELECT thingName, eventType, operation, timestamp() as provisioned_at FROM '$aws/events/thing/+/created'"
+      device_field = "thingName"
     }
   }
 
@@ -176,10 +180,20 @@ locals {
     }
   }
 
-  # The dev provisioning rule was created in the console with a multi-line SQL.
-  # Keep it verbatim so the import produces no change on that rule.
-  sql_override = {
-    ProvisionDevices = "  SELECT\n    thingName,\n    eventType,\n    operation,\n    timestamp() as provisioned_at\n  FROM '$aws/events/thing/+/created'"
+  # Dev rules only see the devices listed in dev-devices.tf, so client
+  # diffusers reach the prod site only. IoT SQL has no IN operator.
+  dev_device_filter = {
+    for name, f in local.flows : name => join(" OR ", [
+      for serial in local.dev_device_serials : "${f.device_field} = '${serial}'"
+    ])
+  }
+
+  rule_sql = {
+    for fn, f in local.functions : fn => (
+      f.site == "dev"
+      ? "${local.flows[f.flow].sql} WHERE ${local.dev_device_filter[f.flow]}"
+      : local.flows[f.flow].sql
+    )
   }
 
   online_status_policy_arns = toset([
@@ -302,7 +316,7 @@ resource "aws_iot_topic_rule" "to_lambda" {
   name        = each.value.rule_name
   description = each.value.rule_description
   enabled     = true
-  sql         = lookup(local.sql_override, each.key, local.flows[each.value.flow].sql)
+  sql         = local.rule_sql[each.key]
   sql_version = "2016-03-23"
 
   lambda {
