@@ -28,6 +28,16 @@ Créé à la main, importé dans Terraform le 2026-10-05 (blocs `import` retiré
 
 Les Lambdas dev et prod d'un flux exécutent le même code (`prod-iot/lambda/<flux>/`). Seules `API_URL` et `API_KEY` diffèrent.
 
+## Événements en échec et alertes (prod)
+
+Les règles IoT invoquent les Lambdas en asynchrone. Pour les 4 Lambdas prod : 2 réessais, puis l'événement part dans la file SQS `prod-iot-failed-events` (conservation 14 jours) au lieu d'être perdu.
+
+Alarmes `prod-iot-*` (`alerts.tf`) vers le topic SNS `prod-iot-alerts`, abonné à it@aromaestro.com :
+- `prod-iot-<Lambda>-errors`, `-dropped`, `-destination_failures` (seuil > 0 sur 5 min) ;
+- `prod-iot-failed-events-queued` : au moins un événement en attente dans la file. Inspecter, corriger côté site, puis rejouer ou purger.
+
+Le topic est chiffré par la clé KMS `alias/prod-iot-alerts` : CloudWatch ne peut pas publier vers un topic chiffré avec `alias/aws/sns`.
+
 ## Clés API
 
 `API_KEY` est envoyée dans l'en-tête `X-Api-Key`. La valeur prod est `AWS_IOT_LAMBDA_API_KEY` du `config.php` du site prod. Les clés sont dans `prod-iot/iot.auto.tfvars` (gitignoré, voir `iot.auto.tfvars.example`) et donc dans le state S3 chiffré. Ne jamais les committer.
