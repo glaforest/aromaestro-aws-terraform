@@ -188,11 +188,8 @@ locals {
     ])
   }
 
-  # Node 20 is end of life. Shadow moves to nodejs22.x dev first; prod stays
-  # pinned until a shadow update is confirmed on dev (2026-10-08).
-  runtime_override = {
-    iotShadowToApiProd = "nodejs20.x"
-  }
+  # Per-function runtime pin, for staged runtime upgrades (dev first).
+  runtime_override = {}
 
   rule_sql = {
     for fn, f in local.functions : fn => (
